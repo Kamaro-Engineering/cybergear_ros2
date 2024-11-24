@@ -388,6 +388,7 @@ return_type CybergearActuator::read(const rclcpp::Time& time,
   const auto duration = get_clock()->now() - feedback->stamp;
   RCLCPP_INFO(get_logger(), "Last feedback %f seconds old", duration.seconds());
 
+  requestFeedback();
   return return_type::OK;
 }
 
@@ -420,7 +421,6 @@ return_type CybergearActuator::write(const rclcpp::Time& /*time*/,
 }
 
 void CybergearActuator::receive() {
-  RCLCPP_WARN(get_logger(), "Start receiver thread");
   while (!is_initialized_.load(std::memory_order_acquire)) {
     std::this_thread::yield();
   }
@@ -432,10 +432,6 @@ void CybergearActuator::receive() {
   Feedback feedback = *rtb_feedback_.readFromNonRT();
 
   while (rclcpp::ok()) {
-    if (is_active_) {
-      std::this_thread::sleep_for(100ms);
-      continue;
-    }
     while (!is_active_.load(std::memory_order_acquire) && rclcpp::ok()) {
       std::this_thread::yield();
     }
@@ -449,8 +445,6 @@ void CybergearActuator::receive() {
       continue;
     }
     uint32_t id = can_id.identifier();
-    RCLCPP_ERROR(get_logger(), "Received new can frame");
-
     if (!frame_id.isDevice(id)) {
       continue;
     }
@@ -527,6 +521,12 @@ return_type CybergearActuator::switchCommandInterface(
 
   command_mode_ = new_command_mode;
   return return_type::OK;
+}
+
+void CybergearActuator::requestFeedback() {
+  cybergear_driver_core::CanFrame frame;
+  frame.id = packet_->frameId().getFeedbackId();
+  send(frame);
 }
 
 }  // namespace cybergear_control

@@ -57,6 +57,7 @@ private:
   return_type send(const cybergear_driver_core::CanFrame&);
 
   return_type switchCommandInterface(uint8_t);
+  void requestFeedback();
 
 private:
   std::atomic_bool is_active_ = false;
@@ -76,7 +77,7 @@ private:
   std::vector<double> last_joint_commands_;
   std::vector<double> joint_states_;
 
-  std::string can_filters_;
+  std::string can_filters_ = "0:0";
   std::string can_interface_;
 
   std::chrono::nanoseconds timeout_ns_;
