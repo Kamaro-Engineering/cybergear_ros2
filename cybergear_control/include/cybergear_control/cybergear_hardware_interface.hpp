@@ -59,6 +59,10 @@ private:
   return_type switchCommandInterface(uint8_t);
 
 private:
+  std::atomic_bool is_active_ = false;
+  std::atomic_bool is_initialized_ = false;
+
+  cybergear_driver_core::CybergearPacketParam params_;
   std::unique_ptr<cybergear_driver_core::CybergearPacket> packet_;
 
   uint8_t active_interface_;
@@ -89,7 +93,6 @@ private:
     rclcpp::Time stamp;
   };
 
-  std::atomic_bool is_active_ = false;
   realtime_tools::RealtimeBuffer<Feedback> rtb_feedback_;
 };
 

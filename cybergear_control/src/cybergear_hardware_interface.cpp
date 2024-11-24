@@ -60,41 +60,40 @@ CallbackReturn CybergearActuator::on_configure(
   RCLCPP_INFO(get_logger(), "timeout(s): %f", timeout_sec);
   RCLCPP_INFO(get_logger(), "interval(s): %f", interval_sec);
 
-  cybergear_driver_core::CybergearPacketParam params;
-  params.device_id = std::stoi(info_.hardware_parameters["device_id"]);
-  params.primary_id = std::stoi(info_.hardware_parameters["primary_id"]);
-  params.max_position = std::stof(info_.hardware_parameters["max_position"]);
-  params.min_position = std::stof(info_.hardware_parameters["min_position"]);
-  params.max_velocity = std::stof(info_.hardware_parameters["max_velocity"]);
-  params.min_velocity = std::stof(info_.hardware_parameters["min_velocity"]);
-  params.max_effort = std::stof(info_.hardware_parameters["max_effort"]);
-  params.min_effort = std::stof(info_.hardware_parameters["min_effort"]);
-  params.max_gain_kp = std::stof(info_.hardware_parameters["max_gain_kp"]);
-  params.min_gain_kp = std::stof(info_.hardware_parameters["min_gain_kp"]);
-  params.max_gain_kd = std::stof(info_.hardware_parameters["max_gain_kd"]);
-  params.min_gain_kd = std::stof(info_.hardware_parameters["min_gain_kd"]);
-  params.max_current = std::stof(info_.hardware_parameters["max_current"]);
-  params.min_current = std::stof(info_.hardware_parameters["min_current"]);
-  params.temperature_scale =
+  params_.device_id = std::stoi(info_.hardware_parameters["device_id"]);
+  params_.primary_id = std::stoi(info_.hardware_parameters["primary_id"]);
+  params_.max_position = std::stof(info_.hardware_parameters["max_position"]);
+  params_.min_position = std::stof(info_.hardware_parameters["min_position"]);
+  params_.max_velocity = std::stof(info_.hardware_parameters["max_velocity"]);
+  params_.min_velocity = std::stof(info_.hardware_parameters["min_velocity"]);
+  params_.max_effort = std::stof(info_.hardware_parameters["max_effort"]);
+  params_.min_effort = std::stof(info_.hardware_parameters["min_effort"]);
+  params_.max_gain_kp = std::stof(info_.hardware_parameters["max_gain_kp"]);
+  params_.min_gain_kp = std::stof(info_.hardware_parameters["min_gain_kp"]);
+  params_.max_gain_kd = std::stof(info_.hardware_parameters["max_gain_kd"]);
+  params_.min_gain_kd = std::stof(info_.hardware_parameters["min_gain_kd"]);
+  params_.max_current = std::stof(info_.hardware_parameters["max_current"]);
+  params_.min_current = std::stof(info_.hardware_parameters["min_current"]);
+  params_.temperature_scale =
       std::stof(info_.hardware_parameters["temperature_scale"]);
 
-  RCLCPP_INFO(get_logger(), "device_id: %d", params.device_id);
-  RCLCPP_INFO(get_logger(), "primary_id: %d", params.primary_id);
-  RCLCPP_INFO(get_logger(), "max_position: %f", params.max_position);
-  RCLCPP_INFO(get_logger(), "min_position: %f", params.min_position);
-  RCLCPP_INFO(get_logger(), "max_velocity: %f", params.max_velocity);
-  RCLCPP_INFO(get_logger(), "min_velocity: %f", params.min_velocity);
-  RCLCPP_INFO(get_logger(), "max_effort: %f", params.max_effort);
-  RCLCPP_INFO(get_logger(), "min_effort: %f", params.min_effort);
-  RCLCPP_INFO(get_logger(), "max_gain_kp: %f", params.max_gain_kp);
-  RCLCPP_INFO(get_logger(), "min_gain_kp: %f", params.min_gain_kp);
-  RCLCPP_INFO(get_logger(), "max_gain_kd: %f", params.max_gain_kd);
-  RCLCPP_INFO(get_logger(), "min_gain_kd: %f", params.min_gain_kd);
-  RCLCPP_INFO(get_logger(), "max_current: %f", params.max_current);
-  RCLCPP_INFO(get_logger(), "min_current: %f", params.min_current);
-  RCLCPP_INFO(get_logger(), "temperature_scale: %f", params.temperature_scale);
+  RCLCPP_INFO(get_logger(), "device_id: %d", params_.device_id);
+  RCLCPP_INFO(get_logger(), "primary_id: %d", params_.primary_id);
+  RCLCPP_INFO(get_logger(), "max_position: %f", params_.max_position);
+  RCLCPP_INFO(get_logger(), "min_position: %f", params_.min_position);
+  RCLCPP_INFO(get_logger(), "max_velocity: %f", params_.max_velocity);
+  RCLCPP_INFO(get_logger(), "min_velocity: %f", params_.min_velocity);
+  RCLCPP_INFO(get_logger(), "max_effort: %f", params_.max_effort);
+  RCLCPP_INFO(get_logger(), "min_effort: %f", params_.min_effort);
+  RCLCPP_INFO(get_logger(), "max_gain_kp: %f", params_.max_gain_kp);
+  RCLCPP_INFO(get_logger(), "min_gain_kp: %f", params_.min_gain_kp);
+  RCLCPP_INFO(get_logger(), "max_gain_kd: %f", params_.max_gain_kd);
+  RCLCPP_INFO(get_logger(), "min_gain_kd: %f", params_.min_gain_kd);
+  RCLCPP_INFO(get_logger(), "max_current: %f", params_.max_current);
+  RCLCPP_INFO(get_logger(), "min_current: %f", params_.min_current);
+  RCLCPP_INFO(get_logger(), "temperature_scale: %f", params_.temperature_scale);
 
-  packet_ = std::make_unique<cybergear_driver_core::CybergearPacket>(params);
+  packet_ = std::make_unique<cybergear_driver_core::CybergearPacket>(params_);
 
   try {
     sender_ = std::make_unique<drivers::socketcan::SocketCanSender>(
@@ -126,7 +125,7 @@ CallbackReturn CybergearActuator::on_configure(
 CallbackReturn CybergearActuator::on_activate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
   // TODO: Send motor enable over CAN
-  is_active_ = true;
+  is_active_.store(true, std::memory_order_release);
 
   switchCommandInterface(active_interface_);
 
@@ -137,7 +136,7 @@ CallbackReturn CybergearActuator::on_activate(
 CallbackReturn CybergearActuator::on_deactivate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
   // TODO: Send motor disable over CAN
-  is_active_ = false;
+  is_active_.store(false, std::memory_order_release);
 
   // do not reset active_interface_, becase this will be reclaimed on_activate
   switchCommandInterface(cybergear_driver_core::run_modes::OPERATION);
@@ -253,6 +252,7 @@ CallbackReturn CybergearActuator::on_init(
   rtb_feedback_ = realtime_tools::RealtimeBuffer<Feedback>(
       {cybergear_driver_core::CanData(), false, false, get_clock()->now()});
 
+  is_initialized_.store(true, std::memory_order_release);
   return CallbackReturn::SUCCESS;
 }
 
@@ -421,9 +421,11 @@ return_type CybergearActuator::write(const rclcpp::Time& /*time*/,
 
 void CybergearActuator::receive() {
   RCLCPP_WARN(get_logger(), "Start receiver thread");
-  drivers::socketcan::CanId can_id;
+  while (!is_initialized_.load(std::memory_order_acquire)) {
+    std::this_thread::yield();
+  }
 
-  // TODO: not thread save
+  drivers::socketcan::CanId can_id;
   const auto frame_id = packet_->frameId();
   const auto clock = get_clock();
 
@@ -433,6 +435,9 @@ void CybergearActuator::receive() {
     if (is_active_) {
       std::this_thread::sleep_for(100ms);
       continue;
+    }
+    while (!is_active_.load(std::memory_order_acquire) && rclcpp::ok()) {
+      std::this_thread::yield();
     }
 
     try {
