@@ -60,6 +60,8 @@ private:
   void requestFeedback();
 
 private:
+  static constexpr float TEMPERATURE_SCALE = 0.1;
+
   std::atomic_bool is_active_ = false;
   std::atomic_bool is_initialized_ = false;
 

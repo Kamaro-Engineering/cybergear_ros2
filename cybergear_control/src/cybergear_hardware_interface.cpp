@@ -74,8 +74,7 @@ CallbackReturn CybergearActuator::on_configure(
   params_.min_gain_kd = std::stof(info_.hardware_parameters["min_gain_kd"]);
   params_.max_current = std::stof(info_.hardware_parameters["max_current"]);
   params_.min_current = std::stof(info_.hardware_parameters["min_current"]);
-  params_.temperature_scale =
-      std::stof(info_.hardware_parameters["temperature_scale"]);
+  params_.temperature_scale = TEMPERATURE_SCALE;
 
   RCLCPP_INFO(get_logger(), "device_id: %d", params_.device_id);
   RCLCPP_INFO(get_logger(), "primary_id: %d", params_.primary_id);
@@ -91,7 +90,6 @@ CallbackReturn CybergearActuator::on_configure(
   RCLCPP_INFO(get_logger(), "min_gain_kd: %f", params_.min_gain_kd);
   RCLCPP_INFO(get_logger(), "max_current: %f", params_.max_current);
   RCLCPP_INFO(get_logger(), "min_current: %f", params_.min_current);
-  RCLCPP_INFO(get_logger(), "temperature_scale: %f", params_.temperature_scale);
 
   packet_ = std::make_unique<cybergear_driver_core::CybergearPacket>(params_);
 
@@ -373,12 +371,19 @@ hardware_interface::return_type CybergearActuator::perform_command_mode_switch(
   return hardware_interface::return_type::OK;
 }
 
-return_type CybergearActuator::read(const rclcpp::Time& time,
+return_type CybergearActuator::read(const rclcpp::Time& /*time*/,
                                     const rclcpp::Duration& /*period*/) {
   auto feedback = rtb_feedback_.readFromRT();
   joint_states_[0] = packet_->parsePosition(feedback->data);
   joint_states_[1] = packet_->parseVelocity(feedback->data);
   joint_states_[2] = packet_->parseEffort(feedback->data);
+  RCLCPP_INFO(
+      get_logger(),
+      "State %x %x %x %x %x %x %x %x, Position: %f, Speed: %f, Current %f",
+      feedback->data[7], feedback->data[6], feedback->data[5],
+      feedback->data[4], feedback->data[3], feedback->data[2],
+      feedback->data[1], feedback->data[0], joint_states_[0], joint_states_[1],
+      joint_states_[2]);
 
   if (feedback->fault || feedback->error) {
     return return_type::ERROR;
