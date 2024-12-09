@@ -60,6 +60,21 @@ private:
   void requestFeedback();
 
 private:
+  static constexpr uint8_t MOTOR_DISABLED = 255;
+
+  static constexpr uint8_t SIF_POSITION = 0;
+  static constexpr uint8_t SIF_VELOCITY = 1;
+  static constexpr uint8_t SIF_TORQUE = 2;
+  static constexpr uint8_t SIF_TEMPERATURE = 3;
+  static constexpr uint8_t SIF_PROPORTIONAL_GAIN = 4;
+  static constexpr uint8_t SIF_INTEGRAL_GAIN = 5;
+  static constexpr uint8_t SIF_DERIVATIVE_GAIN = 6;
+
+  static constexpr uint8_t HIF_POSITION = 0;
+  static constexpr uint8_t HIF_VELOCITY = 1;
+  static constexpr uint8_t HIF_EFFORT = 2;
+  static constexpr uint8_t HIF_CURRENT = 3;
+
   static constexpr float TEMPERATURE_SCALE = 0.1;
 
   std::atomic_bool is_active_ = false;
