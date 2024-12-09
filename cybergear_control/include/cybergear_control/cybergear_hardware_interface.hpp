@@ -66,9 +66,6 @@ private:
   static constexpr uint8_t SIF_VELOCITY = 1;
   static constexpr uint8_t SIF_TORQUE = 2;
   static constexpr uint8_t SIF_TEMPERATURE = 3;
-  static constexpr uint8_t SIF_PROPORTIONAL_GAIN = 4;
-  static constexpr uint8_t SIF_INTEGRAL_GAIN = 5;
-  static constexpr uint8_t SIF_DERIVATIVE_GAIN = 6;
 
   static constexpr uint8_t HIF_POSITION = 0;
   static constexpr uint8_t HIF_VELOCITY = 1;
@@ -85,10 +82,6 @@ private:
 
   uint8_t active_interface_;
   uint8_t command_mode_;
-
-  bool state_interface_position_ = false;
-  bool state_interface_velocity_ = false;
-  bool state_interface_torque_ = false;
 
   std::vector<double> joint_commands_;
   std::vector<double> last_joint_commands_;

@@ -181,69 +181,70 @@ CallbackReturn CybergearActuator::on_init(
 
   const hardware_interface::ComponentInfo& joint = info.joints[0];
 
-  // can give feedback on position, velocity and torque
-  state_interface_position_ = false;
-  state_interface_velocity_ = false;
-  state_interface_torque_ = false;
-  if (joint.state_interfaces.size() > 3) {
-    RCLCPP_FATAL(get_logger(),
-                 "Joint '%s' has to many state interfaces. Any combination of "
-                 "'%s', '%s' and '%s' expected.",
-                 joint.name.c_str(), hardware_interface::HW_IF_POSITION,
-                 hardware_interface::HW_IF_VELOCITY,
-                 hardware_interface::HW_IF_TORQUE);
-    return CallbackReturn::ERROR;
-  }
-
   for (const auto& state_interface : joint.state_interfaces) {
-    if (state_interface.name == hardware_interface::HW_IF_POSITION) {
-      state_interface_position_ = true;
-    } else if (state_interface.name == hardware_interface::HW_IF_VELOCITY) {
-      state_interface_velocity_ = true;
-    } else if (state_interface.name == hardware_interface::HW_IF_TORQUE) {
-      state_interface_torque_ = true;
-    } else {
+    if (state_interface.name != hardware_interface::HW_IF_POSITION &&
+        state_interface.name != hardware_interface::HW_IF_VELOCITY &&
+        state_interface.name != hardware_interface::HW_IF_TORQUE &&
+        state_interface.name != hardware_interface::HW_IF_TEMPERATURE) {
       RCLCPP_FATAL(get_logger(),
                    "Joint '%s' has incompatible state interface '%s'. Any "
-                   "combination of '%s', '%s' and '%s' expected.",
+                   "combination of '%s', '%s', '%s' and '%s' expected.",
                    joint.name.c_str(), state_interface.name.c_str(),
                    hardware_interface::HW_IF_POSITION,
                    hardware_interface::HW_IF_VELOCITY,
-                   hardware_interface::HW_IF_TORQUE);
+                   hardware_interface::HW_IF_TORQUE,
+                   hardware_interface::HW_IF_TEMPERATURE);
+      return CallbackReturn::ERROR;
     }
   }
 
-  // can only be controlled by either position, velocity or torque
-  if (joint.command_interfaces.size() != 1) {
-    RCLCPP_FATAL(get_logger(),
-                 "Joint '%s' has %zu command interfaces found. 1 expected.",
-                 joint.name.c_str(), joint.command_interfaces.size());
-    return hardware_interface::CallbackReturn::ERROR;
+  uint8_t mode_mask = 0;
+  for (const auto& command_interface : joint.command_interfaces) {
+    if (command_interface.name == hardware_interface::HW_IF_POSITION) {
+      mode_mask |= 0x8;
+    } else if (command_interface.name == hardware_interface::HW_IF_VELOCITY) {
+      mode_mask |= 0x4;
+    } else if (command_interface.name == hardware_interface::HW_IF_EFFORT) {
+      mode_mask |= 0x2;
+    } else if (command_interface.name == hardware_interface::HW_IF_CURRENT) {
+      mode_mask |= 0x1;
+    } else {
+      RCLCPP_FATAL(get_logger(),
+                   "Joint '%s' tries to claim incompatible combination of "
+                   "command interfaces.",
+                   joint.name.c_str());
+      return hardware_interface::CallbackReturn::ERROR;
+    }
   }
-
-  active_interface_ = cybergear_driver_core::run_modes::OPERATION;
+  switch (mode_mask) {
+    case 0xE:
+      active_interface_ = cybergear_driver_core::run_modes::OPERATION;
+      break;
+    case 0x1:
+      active_interface_ = cybergear_driver_core::run_modes::CURRENT;
+      break;
+    case 0x4:
+      active_interface_ = cybergear_driver_core::run_modes::SPEED;
+      break;
+    case 0x8:
+      active_interface_ = cybergear_driver_core::run_modes::POSITION;
+      break;
+    case 0:
+      active_interface_ = MOTOR_DISABLED;
+      break;
+    default:
+      RCLCPP_FATAL(
+          get_logger(),
+          "Joint '%s' can not be controlled with this command interfaces.",
+          joint.name.c_str());
+      return CallbackReturn::ERROR;
+  }
   command_mode_ = MOTOR_DISABLED;
-  const auto& command_interface = joint.command_interfaces[0];
-  if (command_interface.name == hardware_interface::HW_IF_POSITION) {
-    active_interface_ = cybergear_driver_core::run_modes::POSITION;
-  } else if (command_interface.name == hardware_interface::HW_IF_VELOCITY) {
-    active_interface_ = cybergear_driver_core::run_modes::SPEED;
-  } else if (command_interface.name == hardware_interface::HW_IF_TORQUE) {
-    active_interface_ = cybergear_driver_core::run_modes::CURRENT;
-  } else {
-    RCLCPP_FATAL(get_logger(),
-                 "Joint '%s' can not be controlled with '%s' command "
-                 "interfaces. '%s', '%s' or '%s' expected.",
-                 joint.name.c_str(), command_interface.name.c_str(),
-                 hardware_interface::HW_IF_POSITION,
-                 hardware_interface::HW_IF_VELOCITY,
-                 hardware_interface::HW_IF_TORQUE);
-    return hardware_interface::CallbackReturn::ERROR;
-  }
-  RCLCPP_INFO(get_logger(), "Using '%s' interface on '%s'",
-              command_interface.name.c_str(), joint.name.c_str());
 
-  joint_states_.assign(7, std::numeric_limits<double>::quiet_NaN());
+  RCLCPP_INFO(get_logger(), "Using '%s' in mode '%d'", joint.name.c_str(),
+              active_interface_);
+
+  joint_states_.assign(4, std::numeric_limits<double>::quiet_NaN());
   joint_commands_.assign(4, std::numeric_limits<double>::quiet_NaN());
   last_joint_commands_ = joint_commands_;
 
@@ -269,15 +270,6 @@ std::vector<StateInterface> CybergearActuator::export_state_interfaces() {
   state_interfaces.emplace_back(hardware_interface::StateInterface(
       info_.joints[0].name, hardware_interface::HW_IF_TEMPERATURE,
       &joint_states_[SIF_TEMPERATURE]));
-  state_interfaces.emplace_back(hardware_interface::StateInterface(
-      info_.joints[0].name, hardware_interface::HW_IF_PROPORTIONAL_GAIN,
-      &joint_states_[SIF_PROPORTIONAL_GAIN]));
-  state_interfaces.emplace_back(hardware_interface::StateInterface(
-      info_.joints[0].name, hardware_interface::HW_IF_INTEGRAL_GAIN,
-      &joint_states_[SIF_INTEGRAL_GAIN]));
-  state_interfaces.emplace_back(hardware_interface::StateInterface(
-      info_.joints[0].name, hardware_interface::HW_IF_DERIVATIVE_GAIN,
-      &joint_states_[SIF_DERIVATIVE_GAIN]));
 
   return state_interfaces;
 }
@@ -441,16 +433,17 @@ hardware_interface::return_type CybergearActuator::perform_command_mode_switch(
 return_type CybergearActuator::read(const rclcpp::Time& /*time*/,
                                     const rclcpp::Duration& /*period*/) {
   auto feedback = rtb_feedback_.readFromRT();
-  joint_states_[0] = packet_->parsePosition(feedback->data);
-  joint_states_[1] = packet_->parseVelocity(feedback->data);
-  joint_states_[2] = packet_->parseEffort(feedback->data);
-  RCLCPP_INFO(
-      get_logger(),
-      "State %x %x %x %x %x %x %x %x, Position: %f, Speed: %f, Current %f",
-      feedback->data[7], feedback->data[6], feedback->data[5],
-      feedback->data[4], feedback->data[3], feedback->data[2],
-      feedback->data[1], feedback->data[0], joint_states_[0], joint_states_[1],
-      joint_states_[2]);
+  joint_states_[SIF_POSITION] = packet_->parsePosition(feedback->data);
+  joint_states_[SIF_VELOCITY] = packet_->parseVelocity(feedback->data);
+  joint_states_[SIF_TORQUE] = packet_->parseEffort(feedback->data);
+  joint_states_[SIF_TEMPERATURE] = packet_->parseTemperature(feedback->data);
+  RCLCPP_INFO(get_logger(),
+              "State %x %x %x %x %x %x %x %x, Position: %f, Speed: %f, "
+              "Current: %f, Temp: %f",
+              feedback->data[7], feedback->data[6], feedback->data[5],
+              feedback->data[4], feedback->data[3], feedback->data[2],
+              feedback->data[1], feedback->data[0], joint_states_[0],
+              joint_states_[1], joint_states_[2], joint_states_[3]);
 
   if (feedback->fault || feedback->error) {
     return return_type::ERROR;
