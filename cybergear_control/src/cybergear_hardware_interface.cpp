@@ -426,13 +426,13 @@ return_type CybergearActuator::read(const rclcpp::Time& /*time*/,
   joint_states_[SIF_VELOCITY] = packet_->parseVelocity(feedback->data);
   joint_states_[SIF_TORQUE] = packet_->parseEffort(feedback->data);
   joint_states_[SIF_TEMPERATURE] = packet_->parseTemperature(feedback->data);
-  RCLCPP_INFO(get_logger(),
-              "State %x %x %x %x %x %x %x %x, Position: %f, Speed: %f, "
-              "Current: %f, Temp: %f",
-              feedback->data[7], feedback->data[6], feedback->data[5],
-              feedback->data[4], feedback->data[3], feedback->data[2],
-              feedback->data[1], feedback->data[0], joint_states_[0],
-              joint_states_[1], joint_states_[2], joint_states_[3]);
+  // RCLCPP_INFO(get_logger(),
+  //             "State %x %x %x %x %x %x %x %x, Position: %f, Speed: %f, "
+  //             "Current: %f, Temp: %f",
+  //             feedback->data[7], feedback->data[6], feedback->data[5],
+  //             feedback->data[4], feedback->data[3], feedback->data[2],
+  //             feedback->data[1], feedback->data[0], joint_states_[0],
+  //             joint_states_[1], joint_states_[2], joint_states_[3]);
 
   if (feedback->fault || feedback->error) {
     return return_type::ERROR;
@@ -440,7 +440,8 @@ return_type CybergearActuator::read(const rclcpp::Time& /*time*/,
 
   // TODO: new param to define timeout time
   const auto duration = get_clock()->now() - feedback->stamp;
-  RCLCPP_INFO(get_logger(), "Last feedback %f seconds old", duration.seconds());
+  // RCLCPP_INFO(get_logger(), "Last feedback %f seconds old",
+  // duration.seconds());
 
   requestFeedback();
   return return_type::OK;
@@ -448,7 +449,32 @@ return_type CybergearActuator::read(const rclcpp::Time& /*time*/,
 
 return_type CybergearActuator::write(const rclcpp::Time& /*time*/,
                                      const rclcpp::Duration& /*period*/) {
-  if (std::isnan(joint_commands_[command_mode_])) return return_type::OK;
+  switch (command_mode_) {
+    case MOTOR_DISABLED:
+      return return_type::OK;
+    case cybergear_driver_core::run_modes::OPERATION:
+      if (std::isnan(joint_commands_[HIF_POSITION]) ||
+          std::isnan(joint_commands_[HIF_VELOCITY]) ||
+          std::isnan(joint_commands_[HIF_EFFORT])) {
+        return return_type::OK;
+      }
+      break;
+    case cybergear_driver_core::run_modes::CURRENT:
+      if (std::isnan(joint_commands_[HIF_CURRENT])) {
+        return return_type::OK;
+      }
+      break;
+    case cybergear_driver_core::run_modes::SPEED:
+      if (std::isnan(joint_commands_[HIF_VELOCITY])) {
+        return return_type::OK;
+      }
+      break;
+    case cybergear_driver_core::run_modes::POSITION:
+      if (std::isnan(joint_commands_[HIF_POSITION])) {
+        return return_type::OK;
+      }
+      break;
+  }
 
   // the cybergear motor has its own motor controller which doesn't need to be
   // updated with the same value again.
@@ -557,7 +583,8 @@ return_type CybergearActuator::switchCommandInterface(
   frame.id = packet_->frameId().getResetTorqueId();
   send(frame);
 
-  RCLCPP_INFO(get_logger(), "Send change run mode");
+  RCLCPP_INFO(get_logger(), "Send change run mode from %d to %d", command_mode_,
+              new_command_mode);
   switch (new_command_mode) {
     case cybergear_driver_core::run_modes::OPERATION:
       frame = packet_->createChangeToOperationModeCommand();
@@ -588,6 +615,7 @@ void CybergearActuator::requestFeedback() {
   cybergear_driver_core::CanFrame frame;
   frame.id = packet_->frameId().getFeedbackId();
   send(frame);
+  frame.id = packet_->frameId().getReadParameterId();
 }
 
 }  // namespace cybergear_control

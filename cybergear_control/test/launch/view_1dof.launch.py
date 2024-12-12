@@ -31,7 +31,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "robot_controller",
-            default_value="velocity_controller",
+            default_value="position_controller",
             description="Robot controller to start.",
         )
     )

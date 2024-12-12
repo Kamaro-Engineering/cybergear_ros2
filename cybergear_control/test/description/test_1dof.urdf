@@ -54,7 +54,7 @@
   <ros2_control name="CybergearMotorWheelJoint" type="actuator">
     <hardware>
       <plugin>cybergear_control/CybergearActuator</plugin>
-      <param name="can_interface">vcan0</param>
+      <param name="can_interface">can0</param>
       <param name="timeout_sec">3.0</param>
       <param name="interval_sec">0.01</param>
       <param name="device_id">127</param>
@@ -65,14 +65,14 @@
         <param name="min">-100</param>
         <param name="max">100</param>
       </command_interface>
-      <command_interface name="velocity">
-        <param name="min">-6</param>
-        <param name="max">6</param>
-      </command_interface>
-      <command_interface name="effort">
-        <param name="min">-4</param>
-        <param name="max">4</param>
-      </command_interface>
+      <!-- <command_interface name="velocity"> -->
+      <!--   <param name="min">-6</param> -->
+      <!--   <param name="max">6</param> -->
+      <!-- </command_interface> -->
+      <!-- <command_interface name="effort"> -->
+      <!--   <param name="min">-4</param> -->
+      <!--   <param name="max">4</param> -->
+      <!-- </command_interface> -->
       <state_interface name="position"/>
       <state_interface name="velocity"/>
       <state_interface name="torque"/>
