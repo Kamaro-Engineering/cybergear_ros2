@@ -62,34 +62,23 @@ CallbackReturn CybergearActuator::on_configure(
 
   params_.device_id = std::stoi(info_.hardware_parameters["device_id"]);
   params_.primary_id = std::stoi(info_.hardware_parameters["primary_id"]);
-  params_.max_position = std::stof(info_.hardware_parameters["max_position"]);
-  params_.min_position = std::stof(info_.hardware_parameters["min_position"]);
-  params_.max_velocity = std::stof(info_.hardware_parameters["max_velocity"]);
-  params_.min_velocity = std::stof(info_.hardware_parameters["min_velocity"]);
-  params_.max_effort = std::stof(info_.hardware_parameters["max_effort"]);
-  params_.min_effort = std::stof(info_.hardware_parameters["min_effort"]);
-  params_.max_gain_kp = std::stof(info_.hardware_parameters["max_gain_kp"]);
-  params_.min_gain_kp = std::stof(info_.hardware_parameters["min_gain_kp"]);
-  params_.max_gain_kd = std::stof(info_.hardware_parameters["max_gain_kd"]);
-  params_.min_gain_kd = std::stof(info_.hardware_parameters["min_gain_kd"]);
-  params_.max_current = std::stof(info_.hardware_parameters["max_current"]);
-  params_.min_current = std::stof(info_.hardware_parameters["min_current"]);
-  params_.temperature_scale = TEMPERATURE_SCALE;
-
   RCLCPP_INFO(get_logger(), "device_id: %d", params_.device_id);
   RCLCPP_INFO(get_logger(), "primary_id: %d", params_.primary_id);
-  RCLCPP_INFO(get_logger(), "max_position: %f", params_.max_position);
-  RCLCPP_INFO(get_logger(), "min_position: %f", params_.min_position);
-  RCLCPP_INFO(get_logger(), "max_velocity: %f", params_.max_velocity);
-  RCLCPP_INFO(get_logger(), "min_velocity: %f", params_.min_velocity);
-  RCLCPP_INFO(get_logger(), "max_effort: %f", params_.max_effort);
-  RCLCPP_INFO(get_logger(), "min_effort: %f", params_.min_effort);
-  RCLCPP_INFO(get_logger(), "max_gain_kp: %f", params_.max_gain_kp);
-  RCLCPP_INFO(get_logger(), "min_gain_kp: %f", params_.min_gain_kp);
-  RCLCPP_INFO(get_logger(), "max_gain_kd: %f", params_.max_gain_kd);
-  RCLCPP_INFO(get_logger(), "min_gain_kd: %f", params_.min_gain_kd);
-  RCLCPP_INFO(get_logger(), "max_current: %f", params_.max_current);
-  RCLCPP_INFO(get_logger(), "min_current: %f", params_.min_current);
+
+  // Using the default values
+  params_.max_position = 4 * M_PI;
+  params_.min_position = -4 * M_PI;
+  params_.max_velocity = 30;
+  params_.min_velocity = -30;
+  params_.max_effort = 12;
+  params_.min_effort = -12;
+  params_.max_gain_kp = 500;
+  params_.min_gain_kp = 0;
+  params_.max_gain_kd = 5;
+  params_.min_gain_kd = 0;
+  params_.max_current = 23;
+  params_.min_current = -23;
+  params_.temperature_scale = 0.1;
 
   packet_ = std::make_unique<cybergear_driver_core::CybergearPacket>(params_);
 
@@ -137,7 +126,7 @@ CallbackReturn CybergearActuator::on_deactivate(
   is_active_.store(false, std::memory_order_release);
 
   // do not reset active_interface_, becase this will be reclaimed on_activate
-  switchCommandInterface(cybergear_driver_core::run_modes::OPERATION);
+  switchCommandInterface(MOTOR_DISABLED);
 
   RCLCPP_DEBUG(get_logger(), "Cybergear driver deactivate.");
   return CallbackReturn::SUCCESS;
@@ -585,7 +574,7 @@ return_type CybergearActuator::switchCommandInterface(
   }
   send(frame);
 
-  if (new_command_mode != 255) {
+  if (new_command_mode != MOTOR_DISABLED) {
     RCLCPP_INFO(get_logger(), "Send enable torque");
     frame.id = packet_->frameId().getEnableTorqueId();
     send(frame);

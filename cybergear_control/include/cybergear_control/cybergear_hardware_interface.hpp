@@ -72,8 +72,6 @@ private:
   static constexpr uint8_t HIF_EFFORT = 2;
   static constexpr uint8_t HIF_CURRENT = 3;
 
-  static constexpr float TEMPERATURE_SCALE = 0.1;
-
   std::atomic_bool is_active_ = false;
   std::atomic_bool is_initialized_ = false;
 
