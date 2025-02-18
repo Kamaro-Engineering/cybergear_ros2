@@ -114,9 +114,20 @@ CallbackReturn CybergearActuator::on_activate(
   // TODO: Send motor enable over CAN
   is_active_.store(true, std::memory_order_release);
 
+  //Send zero position command:
+  return_type result = CybergearActuator::set_zero_position();
+  if(result == return_type::ERROR) {
+    RCLCPP_ERROR(get_logger(), "Error sending zero position command");
+    return CallbackReturn::ERROR;
+  } else {
+    RCLCPP_INFO(get_logger(), "Zero position command sent");
+  }
+
   switchCommandInterface(active_interface_);
 
   RCLCPP_INFO(get_logger(), "Cybergear driver activated.");
+
+
   return CallbackReturn::SUCCESS;
 }
 
@@ -504,6 +515,11 @@ return_type CybergearActuator::write(const rclcpp::Time& /*time*/,
       break;
   }
 
+  return send(frame);
+}
+
+return_type CybergearActuator::set_zero_position() {
+  cybergear_driver_core::CanFrame frame = packet_->createZeroPosition();
   return send(frame);
 }
 
