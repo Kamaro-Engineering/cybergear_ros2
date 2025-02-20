@@ -42,6 +42,8 @@ public:
   std::vector<StateInterface> export_state_interfaces() override;
   std::vector<CommandInterface> export_command_interfaces() override;
 
+  return_type set_zero_position();
+
   return_type prepare_command_mode_switch(
       const std::vector<std::string>&,
       const std::vector<std::string>&) override;

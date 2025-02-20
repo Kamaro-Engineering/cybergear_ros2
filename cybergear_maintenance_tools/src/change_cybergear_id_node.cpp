@@ -72,9 +72,16 @@ ChangeCybergearIdNode::ChangeCybergearIdNode(const rclcpp::NodeOptions & options
 {
   RCLCPP_INFO_STREAM(this->get_logger(), "Start " << this->get_name());
 
+
+
   param_listener_ = std::make_unique<change_cybergear_id_node::ParamListener>(
     this->get_node_parameters_interface());
   params_ = std::make_unique<change_cybergear_id_node::Params>(param_listener_->get_params());
+
+  // Log parameters
+  RCLCPP_INFO_STREAM(this->get_logger(), "Primary ID: " << params_->primary_id);
+  RCLCPP_INFO_STREAM(this->get_logger(), "Device ID: " << params_->device_id);
+  RCLCPP_INFO_STREAM(this->get_logger(), "Target ID: " << params_->target_id);
 
   cybergear_driver_core::CybergearPacketParam packet_param;
   packet_param.primary_id = static_cast<int>(params_->primary_id);
