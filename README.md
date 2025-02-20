@@ -15,3 +15,11 @@ Currently, it includes the following packages:
 
   This package provides functionality to operate CyberGear using CAN frame messages.
 
++ [cybergear_maintenance_tools]
+
+  To use this package, you have to use ros2 run and pass the parameters
+
+  '''ros2 run cybergear_maintenance_tools change_cybergear_id_node --ros-args -p target_id:=126 -p device_id:=127'''
+
+  In this example you change the ID of cybergear motor with id 127 to 126.
+  Also remember to start the ros2_socketcan bridge and run ./can.sh with sudo!
