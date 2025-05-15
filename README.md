@@ -23,3 +23,15 @@ Currently, it includes the following packages:
 
   In this example you change the ID of cybergear motor with id 127 to 126.
   Also remember to start the ros2_socketcan bridge and run ./can.sh with sudo!
+
+  If for some reason this script stops working (like it has for us :/) you can do it manually using cansend!
+
+  ```bash
+  cansend can0 077D007F#00000001
+  ```
+  The command is structured as follows:
+  - 07 - command id
+  - 7D - new motor id
+  - 00 - host id
+  - 7F - current id
+  - \#00000001 - Data field
