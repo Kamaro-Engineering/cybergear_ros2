@@ -90,6 +90,9 @@ private:
   std::string can_filters_ = "0:0";
   std::string can_interface_;
 
+  float current_kp_ = 0;
+  float current_kd_ = 0;
+
   std::chrono::nanoseconds timeout_ns_;
   std::unique_ptr<drivers::socketcan::SocketCanSender> sender_;
 

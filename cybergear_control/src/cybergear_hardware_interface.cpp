@@ -82,6 +82,9 @@ CallbackReturn CybergearActuator::on_configure(
 
   packet_ = std::make_unique<cybergear_driver_core::CybergearPacket>(params_);
 
+  current_kp_ = std::stof(info_.hardware_parameters["effort_kp"]);
+  current_kd_ = std::stof(info_.hardware_parameters["effort_kd"]);
+
   try {
     sender_ = std::make_unique<drivers::socketcan::SocketCanSender>(
         can_interface_, false);
@@ -114,9 +117,9 @@ CallbackReturn CybergearActuator::on_activate(
   // TODO: Send motor enable over CAN
   is_active_.store(true, std::memory_order_release);
 
-  //Send zero position command:
+  // Send zero position command:
   return_type result = CybergearActuator::set_zero_position();
-  if(result == return_type::ERROR) {
+  if (result == return_type::ERROR) {
     RCLCPP_ERROR(get_logger(), "Error sending zero position command");
     return CallbackReturn::ERROR;
   } else {
@@ -126,7 +129,6 @@ CallbackReturn CybergearActuator::on_activate(
   switchCommandInterface(active_interface_);
 
   RCLCPP_INFO(get_logger(), "Cybergear driver activated.");
-
 
   return CallbackReturn::SUCCESS;
 }
@@ -500,8 +502,8 @@ return_type CybergearActuator::write(const rclcpp::Time& /*time*/,
       param.velocity = joint_commands_[HIF_VELOCITY];
       param.effort = joint_commands_[HIF_EFFORT];
       // TODO: Use params for this?
-      param.kp = 0;
-      param.kd = 0;
+      param.kp = current_kp_;
+      param.kd = current_kd_;
       frame = packet_->createMoveCommand(param);
       break;
     case cybergear_driver_core::run_modes::CURRENT:
