@@ -115,13 +115,13 @@ CallbackReturn CybergearActuator::on_activate(
   is_active_.store(true, std::memory_order_release);
 
   //Send zero position command:
-  return_type result = CybergearActuator::set_zero_position();
-  if(result == return_type::ERROR) {
-    RCLCPP_ERROR(get_logger(), "Error sending zero position command");
-    return CallbackReturn::ERROR;
-  } else {
-    RCLCPP_INFO(get_logger(), "Zero position command sent");
-  }
+  //return_type result = CybergearActuator::set_zero_position();
+  //if(result == return_type::ERROR) {
+  //  RCLCPP_ERROR(get_logger(), "Error sending zero position command");
+  //  return CallbackReturn::ERROR;
+  //} else {
+  //  RCLCPP_INFO(get_logger(), "Zero position command sent");
+  //}
 
   switchCommandInterface(active_interface_);
 
@@ -454,7 +454,7 @@ return_type CybergearActuator::read(const rclcpp::Time& /*time*/,
   // RCLCPP_INFO(get_logger(), "Last feedback %f seconds old",
   // duration.seconds());
 
-  requestFeedback();
+  // requestFeedback();
   return return_type::OK;
 }
 
@@ -467,6 +467,7 @@ return_type CybergearActuator::write(const rclcpp::Time& /*time*/,
       if (std::isnan(joint_commands_[HIF_POSITION]) ||
           std::isnan(joint_commands_[HIF_VELOCITY]) ||
           std::isnan(joint_commands_[HIF_EFFORT])) {
+        
         return return_type::OK;
       }
       break;
@@ -500,8 +501,8 @@ return_type CybergearActuator::write(const rclcpp::Time& /*time*/,
       param.velocity = joint_commands_[HIF_VELOCITY];
       param.effort = joint_commands_[HIF_EFFORT];
       // TODO: Use params for this?
-      param.kp = 0;
-      param.kd = 0;
+      param.kp = 100;
+      param.kd = 3;
       frame = packet_->createMoveCommand(param);
       break;
     case cybergear_driver_core::run_modes::CURRENT:
