@@ -59,6 +59,8 @@
       <param name="interval_sec">0.01</param>
       <param name="device_id">127</param>
       <param name="primary_id">0</param>
+      <param name="effort_kp">40</param>
+      <param name="effort_kd">5</param>
     </hardware>
     <joint name="wheel_joint">
       <command_interface name="position">
