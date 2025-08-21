@@ -1,0 +1,23 @@
+zero_service_node:
+  ros__parameters:
+    can_interfaces:
+      - can0
+      - can1
+      - can2
+      - can3
+    can0:
+      shoulder_joint: 125
+      upper_leg_joint: 126
+      lower_leg_joint: 127
+    can1:
+      shoulder_joint: 125
+      upper_leg_joint: 126
+      lower_leg_joint: 127
+    can2:
+      shoulder_joint: 125
+      upper_leg_joint: 126
+      lower_leg_joint: 127
+    can3:
+      shoulder_joint: 125
+      upper_leg_joint: 126
+      lower_leg_joint: 127
