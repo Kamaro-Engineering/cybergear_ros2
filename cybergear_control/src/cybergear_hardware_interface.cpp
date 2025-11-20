@@ -75,7 +75,7 @@ CallbackReturn CybergearActuator::on_configure(
   params_.max_gain_kp = 500;
   params_.min_gain_kp = 0;
   params_.max_gain_kd = 5;
-  params_.min_gain_kd = 0;
+  params_.min_gain_kd = 1;
   params_.max_current = 23;
   params_.min_current = -23;
   params_.temperature_scale = 0.1;
@@ -118,13 +118,13 @@ CallbackReturn CybergearActuator::on_activate(
   is_active_.store(true, std::memory_order_release);
 
   //Send zero position command:
-  //return_type result = CybergearActuator::set_zero_position();
-  //if(result == return_type::ERROR) {
-  //  RCLCPP_ERROR(get_logger(), "Error sending zero position command");
-  //  return CallbackReturn::ERROR;
-  //} else {
-  //  RCLCPP_INFO(get_logger(), "Zero position command sent");
-  //}
+  return_type result = CybergearActuator::set_zero_position();
+  if(result == return_type::ERROR) {
+    RCLCPP_ERROR(get_logger(), "Error sending zero position command");
+    return CallbackReturn::ERROR;
+  } else {
+    RCLCPP_INFO(get_logger(), "Zero position command sent");
+  }
 
   switchCommandInterface(active_interface_);
 
