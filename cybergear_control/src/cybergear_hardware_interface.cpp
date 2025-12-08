@@ -168,10 +168,12 @@ CallbackReturn CybergearActuator::on_error(
 }
 
 CallbackReturn CybergearActuator::on_init(
-    const hardware_interface::HardwareInfo& info) {
-  if (ActuatorInterface::on_init(info) != CallbackReturn::SUCCESS) {
+    const hardware_interface::HardwareComponentInterfaceParams& params) {
+  if (ActuatorInterface::on_init(params) != CallbackReturn::SUCCESS) {
     return CallbackReturn::ERROR;
   }
+
+  const auto& info = params.hardware_info;
 
   // only one joint can be controlled
   if (info.joints.size() != 1) {

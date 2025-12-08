@@ -13,7 +13,7 @@
 #include "realtime_buffer.hpp"
 #include "ros2_socketcan/socket_can_receiver.hpp"
 #include "ros2_socketcan/socket_can_sender.hpp"
-
+#include <hardware_interface/types/hardware_component_interface_params.hpp>
 namespace cybergear_control {
 
 using hardware_interface::ActuatorInterface;
@@ -37,7 +37,7 @@ public:
   CallbackReturn on_error(const rclcpp_lifecycle::State&) override;
 
   // Hardware Interface Callbacks
-  CallbackReturn on_init(const hardware_interface::HardwareInfo&) override;
+  CallbackReturn on_init(const hardware_interface::HardwareComponentInterfaceParams& params) override;
 
   std::vector<StateInterface> export_state_interfaces() override;
   std::vector<CommandInterface> export_command_interfaces() override;
