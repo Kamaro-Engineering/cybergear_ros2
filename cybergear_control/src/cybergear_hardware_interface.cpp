@@ -84,6 +84,9 @@ CallbackReturn CybergearActuator::on_configure(
 
   current_kp_ = std::stof(info_.hardware_parameters["effort_kp"]);
   current_kd_ = std::stof(info_.hardware_parameters["effort_kd"]);
+  
+  RCLCPP_INFO(get_logger(), "Configured gains for '%s': effort_kp=%f, effort_kd=%f",
+              info_.name.c_str(), current_kp_, current_kd_);
 
   try {
     sender_ = std::make_unique<drivers::socketcan::SocketCanSender>(
@@ -118,13 +121,13 @@ CallbackReturn CybergearActuator::on_activate(
   is_active_.store(true, std::memory_order_release);
 
   //Send zero position command:
-  //return_type result = CybergearActuator::set_zero_position();
-  //if(result == return_type::ERROR) {
-  //  RCLCPP_ERROR(get_logger(), "Error sending zero position command");
-  //  return CallbackReturn::ERROR;
-  //} else {
-  //  RCLCPP_INFO(get_logger(), "Zero position command sent");
-  //}
+  return_type result = CybergearActuator::set_zero_position();
+  if(result == return_type::ERROR) {
+    RCLCPP_ERROR(get_logger(), "Error sending zero position command");
+    return CallbackReturn::ERROR;
+  } else {
+    RCLCPP_INFO(get_logger(), "Zero position command sent");
+  }
 
   switchCommandInterface(active_interface_);
 
@@ -212,6 +215,9 @@ CallbackReturn CybergearActuator::on_init(
       mode_mask |= 0x2;
     } else if (command_interface.name == hardware_interface::HW_IF_CURRENT) {
       mode_mask |= 0x1;
+    } else if (command_interface.name == "gain_kp" || command_interface.name == "gain_kd") {
+      // Gain interfaces are always allowed, don't affect mode
+      continue;
     } else {
       RCLCPP_FATAL(get_logger(),
                    "Joint '%s' tries to claim incompatible combination of "
@@ -249,8 +255,14 @@ CallbackReturn CybergearActuator::on_init(
               active_interface_);
 
   joint_states_.assign(4, std::numeric_limits<double>::quiet_NaN());
-  joint_commands_.assign(4, std::numeric_limits<double>::quiet_NaN());
+  joint_commands_.assign(6, std::numeric_limits<double>::quiet_NaN());  // Added kp and kd
   last_joint_commands_ = joint_commands_;
+  
+  // Initialize kp and kd command interfaces
+  joint_commands_[HIF_KP] = current_kp_;
+  joint_commands_[HIF_KD] = current_kd_;
+  last_joint_commands_[HIF_KP] = current_kp_;
+  last_joint_commands_[HIF_KD] = current_kd_;
 
   rtb_feedback_ = realtime_tools::RealtimeBuffer<Feedback>(
       {cybergear_driver_core::CanData(), false, false, get_clock()->now()});
@@ -293,6 +305,12 @@ std::vector<CommandInterface> CybergearActuator::export_command_interfaces() {
   command_interfaces.emplace_back(hardware_interface::CommandInterface(
       info_.joints[0].name, hardware_interface::HW_IF_CURRENT,
       &joint_commands_[HIF_CURRENT]));
+  command_interfaces.emplace_back(hardware_interface::CommandInterface(
+      info_.joints[0].name, "gain_kp",
+      &joint_commands_[HIF_KP]));
+  command_interfaces.emplace_back(hardware_interface::CommandInterface(
+      info_.joints[0].name, "gain_kd",
+      &joint_commands_[HIF_KD]));
 
   return command_interfaces;
 }
@@ -504,9 +522,9 @@ return_type CybergearActuator::write(const rclcpp::Time& /*time*/,
       param.position = joint_commands_[HIF_POSITION];
       param.velocity = joint_commands_[HIF_VELOCITY];
       param.effort = joint_commands_[HIF_EFFORT];
-      // TODO: Use params for this?
-      param.kp = current_kp_;
-      param.kd = current_kd_;
+      // Use dynamic kp/kd from command interfaces
+      param.kp = static_cast<float>(joint_commands_[HIF_KP]);
+      param.kd = static_cast<float>(joint_commands_[HIF_KD]);
       frame = packet_->createMoveCommand(param);
       break;
     case cybergear_driver_core::run_modes::CURRENT:

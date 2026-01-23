@@ -73,6 +73,8 @@ private:
   static constexpr uint8_t HIF_VELOCITY = 1;
   static constexpr uint8_t HIF_EFFORT = 2;
   static constexpr uint8_t HIF_CURRENT = 3;
+  static constexpr uint8_t HIF_KP = 4;
+  static constexpr uint8_t HIF_KD = 5;
 
   std::atomic_bool is_active_ = false;
   std::atomic_bool is_initialized_ = false;
