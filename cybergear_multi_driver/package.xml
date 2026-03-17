@@ -17,6 +17,7 @@
   <depend>std_srvs</depend>
   <depend>cybergear_driver_core</depend>
   <depend>rosidl_default_runtime</depend>
+  <depend>ros2_socketcan</depend>
 
   <exec_depend>ros2launch</exec_depend>
 

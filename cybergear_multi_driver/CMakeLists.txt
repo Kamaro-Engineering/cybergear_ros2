@@ -13,6 +13,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(cybergear_driver_core REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(ros2_socketcan REQUIRED)
 
 # Generate service interfaces (no additional dependencies needed for simple types)
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -30,8 +31,8 @@ add_executable(cybergear_multi_driver_node
 target_include_directories(cybergear_multi_driver_node
   PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    ${ros2_socketcan_INCLUDE_DIRS}
 )
-
 target_link_libraries(cybergear_multi_driver_node
   ${cpp_typesupport_target}
   cybergear_driver_core   # INTERFACE IMPORTED: brings in include dirs transitively
@@ -42,7 +43,9 @@ target_link_libraries(cybergear_multi_driver_node
   rclcpp_components::component
   rclcpp_components::component_manager
   sensor_msgs::sensor_msgs_library
+  ${ros2_socketcan_LIBRARIES}
 )
+
 
 install(TARGETS cybergear_multi_driver_node
   DESTINATION lib/${PROJECT_NAME}
@@ -54,5 +57,5 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}
   OPTIONAL
 )
-
+ament_export_dependencies(ros2_socketcan)
 ament_package()

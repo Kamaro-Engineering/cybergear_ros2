@@ -33,7 +33,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include <cybergear_driver_core/cybergear_driver_core.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
@@ -98,15 +97,14 @@ struct MotorState
 struct CanIface
 {
   std::string name;
-  // ---- CAN interfaces ----
-  std::unordered_map<std::string, CanIface> can_ifaces_;
   std::chrono::nanoseconds timeout_ns_;
   std::unique_ptr<drivers::socketcan::SocketCanSender> sender_;
-
   std::chrono::nanoseconds interval_ns_;
   std::string can_filters_ = "0:0";
   std::unique_ptr<drivers::socketcan::SocketCanReceiver> receiver_;
-  std::thread receiver_thread_;
+  std::thread rx_thread;
+  std::atomic<bool> running{false};
+  mutable std::mutex send_mtx;
 };
 
 // ---------------------------------------------------------------------------
@@ -138,6 +136,8 @@ private:
   std::unordered_map<std::string,
     std::unordered_map<uint8_t, size_t>> iface_device_map_;
 
+  // Per-interface state (sender, receiver, rx_thread)
+  std::unordered_map<std::string, CanIface> can_ifaces_;
 
   // ---- ROS subscriptions ----
   rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr pos_sub_;
