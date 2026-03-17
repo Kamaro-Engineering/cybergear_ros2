@@ -1,0 +1,29 @@
+/**:
+  ros__parameters:
+    # Send frequency for CAN commands [Hz]
+    send_frequency: 100.0
+
+    # After this many milliseconds without a new command the node switches
+    # to hold-position mode (position = last feedback, velocity = 0, effort = 0)
+    command_timeout_ms: 20.0
+
+    # --- Motor array configuration ---
+    # All arrays below must have the same length (one entry per motor).
+    #
+    # CAN device IDs of the motors (must differ from primary_id per motor)
+    motor_can_ids: [125, 126, 127, 125, 126, 127]
+
+    # SocketCAN interface name for each motor
+    motor_can_interfaces: ["can1", "can1", "can1", "can0", "can0", "can0"]
+
+    # Host (primary) CAN ID used when sending frames (must ≠ can_id for each motor)
+    motor_primary_ids: [0, 0, 0, 0, 0, 0]
+
+    # Human-readable joint names (used in the JointState message)
+    motor_names: ["FL_shoulder_joint", "FL_thigh_joint", "FL_calf_joint", "FR_shoulder_joint", "FR_thigh_joint", "FR_calf_joint"]
+
+    # Initial position gain kp  (range [0, 500])
+    motor_kps: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+    # Initial velocity gain kd  (range [0, 5])
+    motor_kds: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]

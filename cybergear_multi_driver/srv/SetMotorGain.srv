@@ -1,0 +1,7 @@
+# Index into the motors array (0-based)
+int32 motor_index
+# Gain value (kp: [0, 500], kd: [0, 5])
+float64 value
+---
+bool success
+string message
