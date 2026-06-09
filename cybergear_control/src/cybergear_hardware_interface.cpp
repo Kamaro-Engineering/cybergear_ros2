@@ -587,7 +587,7 @@ void CybergearActuator::receive() {
     if (frame_id.isFeedback(id)) {
       if (frame_id.hasError(id)) {
         RCLCPP_ERROR(get_logger(), "Detect fault state from cybergear");
-        feedback.error = true;
+        //feedback.error = true;
       }
 
       rtb_feedback_.writeFromNonRT(feedback);
@@ -608,7 +608,7 @@ return_type CybergearActuator::send(
     RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000,
                          "Error sending CAN message: %s - %s",
                          can_interface_.c_str(), ex.what());
-    return return_type::ERROR;
+    return return_type::OK;
   }
 
   return return_type::OK;
