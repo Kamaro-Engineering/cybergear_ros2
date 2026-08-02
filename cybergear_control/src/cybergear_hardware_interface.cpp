@@ -84,6 +84,9 @@ CallbackReturn CybergearActuator::on_configure(
 
   current_kp_ = std::stof(info_.hardware_parameters["effort_kp"]);
   current_kd_ = std::stof(info_.hardware_parameters["effort_kd"]);
+
+  speed_kp_ = std::stof(info_.hardware_parameters["speed_kp"]);
+  speed_ki_ = std::stof(info_.hardware_parameters['speed_ki']);
   
   RCLCPP_INFO(get_logger(), "Configured gains for '%s': effort_kp=%f, effort_kd=%f",
               info_.name.c_str(), current_kp_, current_kd_);
@@ -632,6 +635,7 @@ return_type CybergearActuator::switchCommandInterface(
       frame = packet_->createChangeToPositionModeCommand();
       break;
     case cybergear_driver_core::run_modes::SPEED:
+      setSpeedGains();
       frame = packet_->createChangeToVelocityModeCommand();
       break;
     case cybergear_driver_core::run_modes::CURRENT:
@@ -648,6 +652,21 @@ return_type CybergearActuator::switchCommandInterface(
 
   command_mode_ = new_command_mode;
   return return_type::OK;
+}
+
+void CybergearActuator::setSpeedGains() {
+  cybergear_driver_core::CanFrame frame;
+  std::array<uint8_t, 4> param;
+  param[0] = speed_kp_;
+  frame = createWriteParameter(ram_parameters::SPEED_KP, param);
+  send(frame);
+
+  cybergear_driver_core::CanFrame frame;
+  std::array<uint8_t, 4> param;
+  param[0] = speed_ki_;
+  frame = createWriteParameter(ram_parameters::SPEED_KI, param);
+  send(frame);
+  
 }
 
 void CybergearActuator::requestFeedback() {

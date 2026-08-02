@@ -60,6 +60,7 @@ private:
 
   return_type switchCommandInterface(uint8_t);
   void requestFeedback();
+  void sendSpeedGains();
 
 private:
   static constexpr uint8_t MOTOR_DISABLED = 255;
@@ -94,6 +95,8 @@ private:
 
   float current_kp_ = 0;
   float current_kd_ = 0;
+  float speed_kp_ = 0;
+  float speed_kd_ = 0;
 
   std::chrono::nanoseconds timeout_ns_;
   std::unique_ptr<drivers::socketcan::SocketCanSender> sender_;
