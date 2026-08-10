@@ -97,6 +97,8 @@ private:
   float current_kd_ = 0;
   float speed_kp_ = 0;
   float speed_ki_ = 0;
+  float hstop_min_ = 0;
+  float hstop_max_ = 0;
 
   std::chrono::nanoseconds timeout_ns_;
   std::unique_ptr<drivers::socketcan::SocketCanSender> sender_;
@@ -104,6 +106,8 @@ private:
   std::chrono::nanoseconds interval_ns_;
   std::unique_ptr<drivers::socketcan::SocketCanReceiver> receiver_;
   std::thread receiver_thread_;
+
+  bool hold_joint_opcontrol_mode_;
 
   struct Feedback {
     cybergear_driver_core::CanData data;

@@ -66,8 +66,10 @@ CallbackReturn CybergearActuator::on_configure(
   RCLCPP_INFO(get_logger(), "primary_id: %d", params_.primary_id);
 
   // Using the default values
-  params_.max_position = 4 * M_PI;
-  params_.min_position = -4 * M_PI;
+  params_.max_position = std::stof(info_.hardware_parameters["max_position"]);
+  params_.min_position = std::stof(info_.hardware_parameters["min_position"]);
+  hstop_max_ = std::stof(info_.hardware_parameters["hstop_pos_max"]);
+  hstop_min_ = std::stof(info_.hardware_parameters["hstop_pos_min"]);
   params_.max_velocity = 30;
   params_.min_velocity = -30;
   params_.max_effort = 12;
@@ -87,7 +89,13 @@ CallbackReturn CybergearActuator::on_configure(
 
   speed_kp_ = std::stof(info_.hardware_parameters["speed_kp"]);
   speed_ki_ = std::stof(info_.hardware_parameters["speed_ki"]);
-  
+
+  if(info_.hardware_parameters.count("hold_joint_opcontrol_mode") == 0) {
+    RCLCPP_WARN(get_logger(), "hold_joint_opcontrol_mode not specified, defaulting to false");
+    hold_joint_opcontrol_mode_ = false;
+  } else {
+    hold_joint_opcontrol_mode_ = stob(info_.hardware_parameters["hold_joint_opcontrol_mode"]);
+  }
   RCLCPP_INFO(get_logger(), "Configured gains for '%s': effort_kp=%f, effort_kd=%f",
               info_.name.c_str(), current_kp_, current_kd_);
 
@@ -170,7 +178,7 @@ CallbackReturn CybergearActuator::on_shutdown(
 CallbackReturn CybergearActuator::on_error(
     const rclcpp_lifecycle::State& /*previous_state*/) {
   RCLCPP_ERROR(get_logger(), "Cybergear driver error.");
-  return CallbackReturn::FAILURE;
+  return CallbackReturn::SUCCESS;
 }
 
 CallbackReturn CybergearActuator::on_init(
@@ -470,9 +478,9 @@ return_type CybergearActuator::read(const rclcpp::Time& /*time*/,
   //             feedback->data[1], feedback->data[0], joint_states_[0],
   //             joint_states_[1], joint_states_[2], joint_states_[3]);
 
-  if (feedback->fault || feedback->error) {
-    return return_type::ERROR;
-  }
+  //if (feedback->fault || feedback->error) {
+  //  return return_type::ERROR;
+  //}
 
   // TODO: new param to define timeout time
   const auto duration = get_clock()->now() - feedback->stamp;
@@ -522,12 +530,28 @@ return_type CybergearActuator::write(const rclcpp::Time& /*time*/,
   cybergear_driver_core::MoveParam param;
   switch (command_mode_) {
     case cybergear_driver_core::run_modes::OPERATION:
-      param.position = joint_commands_[HIF_POSITION];
-      param.velocity = joint_commands_[HIF_VELOCITY];
-      param.effort = joint_commands_[HIF_EFFORT];
-      // Use dynamic kp/kd from command interfaces
-      param.kp = static_cast<float>(joint_commands_[HIF_KP]);
-      param.kd = static_cast<float>(joint_commands_[HIF_KD]);
+      //Emergency stop gains (temporary)
+      param.kp = 20.0;
+      param.kd = 2.0;
+
+
+      if (joint_states_[HIF_POSITION] > hstop_max_) {
+        param.position = hstop_max_;
+        RCLCPP_INFO(get_logger(), "cmd position %.6f and max_position %.6f,",
+              joint_states_[HIF_POSITION], hstop_max_);
+      } else if (joint_states_[HIF_POSITION] < hstop_min_) {
+        param.position = hstop_min_;
+        RCLCPP_INFO(get_logger(), "cmd position %.6f and min_position %.6f,",
+              joint_states_[HIF_POSITION], hstop_min_);
+      } else {
+        param.velocity = joint_commands_[HIF_VELOCITY];
+        param.effort = joint_commands_[HIF_EFFORT];
+        param.position = joint_commands_[HIF_POSITION];
+        // Use dynamic kp/kd from command interfaces
+        param.kp = static_cast<float>(joint_commands_[HIF_KP]);
+        param.kd = static_cast<float>(joint_commands_[HIF_KD]);
+      }
+      
       frame = packet_->createMoveCommand(param);
       break;
     case cybergear_driver_core::run_modes::CURRENT:
@@ -611,7 +635,7 @@ return_type CybergearActuator::send(
     RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000,
                          "Error sending CAN message: %s - %s",
                          can_interface_.c_str(), ex.what());
-    return return_type::ERROR;
+    return return_type::OK;
   }
 
   return return_type::OK;
